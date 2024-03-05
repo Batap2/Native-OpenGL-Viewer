@@ -1,8 +1,6 @@
 # Rules to ignore all files without extension (binaries on unix)
 # these rules must be above all the other rules
-*
-!/**/
-!*.*
+
 
 # QTCreator user prefs
 *.user
