@@ -1,0 +1,2 @@
+add_subdirectory(vcglib)
+add_subdirectory(VCGLib_Helper)
