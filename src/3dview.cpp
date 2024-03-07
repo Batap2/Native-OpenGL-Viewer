@@ -21,6 +21,7 @@
 #include "Point3D.inl.h"
 #include "VCGLib_Helper/LODMaker.h"
 #include "ObjIO.h"
+#include <chrono>
 
 #ifndef M_PI
 #define M_PI	3.14159265358979323846
@@ -39,6 +40,7 @@ std::vector<Point3D> _vertices2;
 std::vector<Point3D> _normals2;
 
 bool displayNormals_ = false;
+int displayMode = 0;
 
 float lpos[] = {10, 10, 10, 0};
 float lAmbient[] = {0.2, 0.2, 0.2, 0};
@@ -87,6 +89,7 @@ using v3f = Point3D;
 void setMatColor(float r,float g,float b,float a){
     GLfloat m[] = {r,g,b,a};
     glMaterialfv(GL_FRONT, GL_DIFFUSE, m);
+    glColor3f(r,g,b);
 }
 
 void computeNormals(std::vector<uint32_t> &indices, std::vector<v3f> &vertices, std::vector<v3f> &normals)
@@ -103,8 +106,15 @@ void computeNormals(std::vector<uint32_t> &indices, std::vector<v3f> &vertices, 
     }
 }
 
+void translateVertices(std::vector<Point3D> & vertices, Point3D vec)
+{
+    for (auto &v : vertices){
+        v += vec;
+    }
+}
+
 void fillTabs(){
-    ObjIO::readObj("../../objTUY/TUY_36.obj",_indices,_vertices);
+    ObjIO::readObj("../../objTUY/TUY_1071.obj",_indices,_vertices);
 }
 
 void displayNormal(Point3D & pos, Point3D &normal, float scale)
@@ -164,7 +174,10 @@ void displayMesh(std::vector<uint32_t> &indices, std::vector<v3f> &vertices, std
 
 void drawCoordinateAxis() {
     glLineWidth(2.0f);  // Set the line width for clarity
-    glDisable(GL_LIGHTING);
+
+    if(displayMode == 0){
+        glDisable(GL_LIGHTING);
+    }
 
     // X-axis (red)
     //setMatColor(1,0,0,0);
@@ -188,18 +201,37 @@ void drawCoordinateAxis() {
     glVertex3f(-cam_pan[0], -cam_pan[1], -cam_pan[2]+1);
     glEnd();
 
-    glEnable(GL_LIGHTING);
+    if(displayMode == 0){
+        glEnable(GL_LIGHTING);
+    }
     glLineWidth(1.0f);  // Reset the line width
 }
 
 int main(int argc, char **argv)
 {
     fillTabs();
+
     computeNormals(_indices, _vertices, _normals);
 
-    //LODMaker::decimateMesh(16, _indices, _vertices, _indices2, _vertices2);
+    auto start = std::chrono::high_resolution_clock::now();
 
-    //computeNormals(_indices2, _vertices2, _normals2);
+    CMeshO m1 = VCG_CMesh0_Helper::constructCMesh(_indices, _vertices, _normals);
+
+    VCG_CMesh0_Helper::repairAndPrepareForDecimation(m1);
+
+    LODMaker::decimateMesh(100, m1);
+
+    VCG_CMesh0_Helper::retrieveCMeshData(m1, _indices2, _vertices2, _normals2);
+
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+    std::cout << "init vertices : " << _indices.size() << "\n";
+    std::cout << "decimate mesh vertices : " << _indices2.size() << "\n";
+    std::cout << "elapsed time : " << duration.count() << "\n";
+
+    translateVertices(_vertices, Point3D(-0.15,0,0));
+    translateVertices(_vertices2, Point3D(0.15,0,0));
 
 	glutInit(&argc, argv);
 	glutInitWindowSize(1600, 900);
@@ -257,9 +289,10 @@ void display(void)
 	glVertex3f(-5, -1.3, -5);
 	glEnd();
 
-    setMatColor(0.8,0.2,0,0);
+    setMatColor(1,1,1,0);
     displayMesh(_indices, _vertices, _normals);
-    //displayMesh(_indices2, _vertices2, _normals2);
+    setMatColor(1,0.8,0.2,0);
+    displayMesh(_indices2, _vertices2, _normals2);
 
     drawCoordinateAxis();
 
@@ -333,7 +366,26 @@ void keypress(unsigned char key, int x, int y)
 	case 'q':
 		exit(0);
 		break;
+    case 'm':
+        displayMode = (++displayMode)%2;
+        if(displayMode == 0){
+            glEnable(GL_DEPTH_TEST);
+            glEnable(GL_CULL_FACE);
+            glPolygonMode(GL_FRONT, GL_FILL);
+            glEnable(GL_LIGHTING);
+            glEnable(GL_LIGHT0);
 
+            glLightfv(GL_LIGHT0, GL_POSITION, lpos);
+            glLightfv(GL_LIGHT0, GL_AMBIENT, lAmbient);
+            glLightfv(GL_LIGHT0, GL_DIFFUSE, lDiffuse);
+        } else if(displayMode == 1){
+            glDisable(GL_DEPTH_TEST);
+            glDisable(GL_LIGHTING);
+            glDisable(GL_LIGHT0);
+            glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+        }
+        display();
+        break;
 	case ' ':
 		anim ^= 1;
 		glutIdleFunc(anim ? idle : 0);

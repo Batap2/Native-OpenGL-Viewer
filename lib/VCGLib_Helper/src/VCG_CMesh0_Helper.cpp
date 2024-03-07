@@ -3,14 +3,15 @@
 //
 
 #include "../VCG_CMesh0_Helper.h"
+#include "vcg/complex/algorithms/clustering.h"
 
 
-CMeshO VCG_CMesh0_Helper::constructCMesh(const std::vector<uint32_t> &indices, const std::vector<Point3D> &vertices, const std::vector<Point3D> &normals)
+CMeshO VCG_CMesh0_Helper::constructCMesh(const std::vector<uint32_t> &indices, const std::vector<Point3D> &vertices, const std::vector<Point3D> &faceNormals)
 {
     CMeshO m;
 
-    bool hasVNormals = normals.size() > 0;
-    bool hasFNormals = false;
+    bool hasVNormals = false;
+    bool hasFNormals = faceNormals.size() > 0;
 
     std::vector<CMeshO::VertexPointer> ivp(vertices.size());
 
@@ -22,7 +23,7 @@ CMeshO VCG_CMesh0_Helper::constructCMesh(const std::vector<uint32_t> &indices, c
         vi->Base().EnableMark();
         vi->Base().EnableVFAdjacency();
         if (hasVNormals) {
-            vi->N() = CMeshO::CoordType(normals[i][0],normals[i][1], normals[i][2]);
+            vi->N() = CMeshO::CoordType(faceNormals[i][0], faceNormals[i][1], faceNormals[i][2]);
         }
     }
 
@@ -37,7 +38,7 @@ CMeshO VCG_CMesh0_Helper::constructCMesh(const std::vector<uint32_t> &indices, c
 
         if (hasFNormals) {
             fi->N() =
-                    CMeshO::CoordType(normals[i][0],normals[i][1], normals[i][2]);
+                    CMeshO::CoordType(faceNormals[i][0], faceNormals[i][1], faceNormals[i][2]);
         }
     }
 
@@ -80,21 +81,16 @@ CMeshO VCG_CMesh0_Helper::constructCMesh(const std::vector<uint32_t> &indices, c
     return m;
 }
 
-void VCG_CMesh0_Helper::retrieveCMeshData(CMeshO &mesh, std::vector<uint32_t> &indices, std::vector<Point3D> &vertices, std::vector<Point3D> &normals)
+void VCG_CMesh0_Helper::retrieveCMeshData(CMeshO &mesh, std::vector<uint32_t> &indices, std::vector<Point3D> &vertices, std::vector<Point3D> &faceNormals)
 {
 
     vertices.resize(mesh.VN());
     indices.resize(mesh.FN()*3);
-    normals.resize(mesh.VN()*3);
+    faceNormals.resize(mesh.VN() * 3);
 
     for (int i = 0; i < mesh.VN(); i++) {
         Point3D v = {mesh.vert[i].P()[0], mesh.vert[i].P()[1],mesh.vert[i].P()[2]};
         vertices[i] = v;
-    }
-
-    for (int i = 0; i < mesh.VN(); i++) {
-        Point3D n = {mesh.vert[i].N()[0], mesh.vert[i].N()[1],mesh.vert[i].N()[2]};
-        normals[i] = n;
     }
 
     for (int i = 0; i < mesh.FN(); i++) {
@@ -102,4 +98,39 @@ void VCG_CMesh0_Helper::retrieveCMeshData(CMeshO &mesh, std::vector<uint32_t> &i
             indices[i*3 + j] = (uint32_t) vcg::tri::Index(mesh, mesh.face[i].V(j));
         }
     }
+
+    for (int i = 0; i < mesh.FN(); i++) {
+        Point3D n = {mesh.face[i].N()[0], mesh.face[i].N()[1],mesh.face[i].N()[2]};
+        faceNormals[i] = n;
+    }
+}
+
+void VCG_CMesh0_Helper::repairAndPrepareForDecimation(CMeshO &mesh)
+{
+    int nullFaces=vcg::tri::Clean<CMeshO>::RemoveFaceOutOfRangeArea(mesh,0);
+    int deldupvert=vcg::tri::Clean<CMeshO>::RemoveDuplicateVertex(mesh);
+    int delvert=vcg::tri::Clean<CMeshO>::RemoveUnreferencedVertex(mesh);
+
+    float maxVal = mesh.bbox.Diag() * 0.001;
+
+    vcg::tri::Clustering<CMeshO, vcg::tri::AverageColorCell<CMeshO>> ClusteringGrid(
+            mesh.bbox, 100000, maxVal);
+    if(mesh.FN() == 0) {
+        ClusteringGrid.AddPointSet(mesh);
+        ClusteringGrid.ExtractPointSet(mesh);
+    }
+    else {
+        ClusteringGrid.AddMesh(mesh);
+        ClusteringGrid.ExtractMesh(mesh);
+    }
+
+    vcg::tri::UpdateBounding<CMeshO>::Box(mesh);
+    if(mesh.fn>0) {
+        vcg::tri::UpdateNormal<CMeshO>::PerFaceNormalized(mesh);
+        vcg::tri::UpdateNormal<CMeshO>::PerVertexAngleWeighted(mesh);
+    }
+
+    //m.clearDataMask(MeshModel::MM_FACEFACETOPO);
+
+    std::cout << maxVal << "\n";
 }

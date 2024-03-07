@@ -2,6 +2,7 @@
 #define VCG_CMESH0_HELPER_H
 
 #include <vector>
+#include <vcg/complex/algorithms/clean.h>
 #include "cmesh.h"
 #include "../../src/Point3D.h"
 #include "../../src/Point3D.inl.h"
@@ -28,9 +29,11 @@ struct VCG_CMesh0_Helper {
         }
     };
 
-    static CMeshO constructCMesh(const std::vector<uint32_t> &indices, const std::vector<Point3D> &vertices, const std::vector<Point3D> &normals);
+    static CMeshO constructCMesh(const std::vector<uint32_t> &indices, const std::vector<Point3D> &vertices, const std::vector<Point3D> &faceNormals);
 
-    static void retrieveCMeshData(CMeshO &mesh, std::vector<uint32_t> &indices, std::vector<Point3D> &vertices, std::vector<Point3D> &normals);
+    static void retrieveCMeshData(CMeshO &mesh, std::vector<uint32_t> &indices, std::vector<Point3D> &vertices, std::vector<Point3D> &faceNormals);
+
+    static void repairAndPrepareForDecimation(CMeshO &mesh);
 };
 
 
