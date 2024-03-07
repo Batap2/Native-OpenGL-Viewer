@@ -217,9 +217,9 @@ int main(int argc, char **argv)
 
     CMeshO m1 = VCG_CMesh0_Helper::constructCMesh(_indices, _vertices, _normals);
 
-    VCG_CMesh0_Helper::repairAndPrepareForDecimation(m1);
+    LODMaker::repairAndPrepareForDecimation(m1);
 
-    LODMaker::decimateMesh(100, m1);
+    //LODMaker::decimateMesh(100, m1);
 
     VCG_CMesh0_Helper::retrieveCMeshData(m1, _indices2, _vertices2, _normals2);
 

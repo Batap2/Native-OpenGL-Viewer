@@ -57,3 +57,33 @@ void LODMaker::decimateMesh(int targetFaceNb, CMeshO &mesh)
     vcg::tri::UpdateNormal<CMeshO>::PerVertexFromCurrentFaceNormal(mesh);
     vcg::tri::UpdateNormal<CMeshO>::NormalizePerVertex(mesh);
 }
+
+void LODMaker::repairAndPrepareForDecimation(CMeshO &mesh)
+{
+    int nullFaces=vcg::tri::Clean<CMeshO>::RemoveFaceOutOfRangeArea(mesh,0);
+    int deldupvert=vcg::tri::Clean<CMeshO>::RemoveDuplicateVertex(mesh);
+    int delvert=vcg::tri::Clean<CMeshO>::RemoveUnreferencedVertex(mesh);
+
+    float maxVal = mesh.bbox.Diag() * 0.001;
+
+    vcg::tri::Clustering<CMeshO, vcg::tri::AverageColorCell<CMeshO>> ClusteringGrid(
+            mesh.bbox, 100000, maxVal);
+    if(mesh.FN() == 0) {
+        ClusteringGrid.AddPointSet(mesh);
+        ClusteringGrid.ExtractPointSet(mesh);
+    }
+    else {
+        ClusteringGrid.AddMesh(mesh);
+        ClusteringGrid.ExtractMesh(mesh);
+    }
+
+    vcg::tri::UpdateBounding<CMeshO>::Box(mesh);
+    if(mesh.fn>0) {
+        vcg::tri::UpdateNormal<CMeshO>::PerFaceNormalized(mesh);
+        vcg::tri::UpdateNormal<CMeshO>::PerVertexAngleWeighted(mesh);
+    }
+
+    //m.clearDataMask(MeshModel::MM_FACEFACETOPO);
+
+    std::cout << maxVal << "\n";
+}
