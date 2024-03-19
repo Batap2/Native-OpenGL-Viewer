@@ -64,10 +64,20 @@ void LODMaker::repairAndPrepareForDecimation(CMeshO &mesh)
     int deldupvert=vcg::tri::Clean<CMeshO>::RemoveDuplicateVertex(mesh);
     int delvert=vcg::tri::Clean<CMeshO>::RemoveUnreferencedVertex(mesh);
 
+    mesh.face.EnableFFAdjacency();
+    vcg::tri::UpdateTopology<CMeshO>::FaceFace(mesh);
+
+    int total = vcg::tri::Clean<CMeshO>::SplitManifoldComponents(mesh);
+
+    vcg::tri::UpdateBounding<CMeshO>::Box(mesh);
+    if(mesh.fn>0) {
+        vcg::tri::UpdateNormal<CMeshO>::PerFaceNormalized(mesh);
+        vcg::tri::UpdateNormal<CMeshO>::PerVertexAngleWeighted(mesh);
+    }
+
     float maxVal = mesh.bbox.Diag() * 0.001;
 
-    vcg::tri::Clustering<CMeshO, vcg::tri::AverageColorCell<CMeshO>> ClusteringGrid(
-            mesh.bbox, 100000, maxVal);
+    vcg::tri::Clustering<CMeshO, vcg::tri::AverageColorCell<CMeshO>> ClusteringGrid(mesh.bbox, 100000, maxVal);
     if(mesh.FN() == 0) {
         ClusteringGrid.AddPointSet(mesh);
         ClusteringGrid.ExtractPointSet(mesh);
@@ -85,5 +95,31 @@ void LODMaker::repairAndPrepareForDecimation(CMeshO &mesh)
 
     //m.clearDataMask(MeshModel::MM_FACEFACETOPO);
 
-    std::cout << maxVal << "\n";
+}
+
+std::vector<vcgLibHelperLOD> LODMaker::makeLOD(CMeshO &mesh, int maxLODNumber, float reduction) {
+    std::vector<vcgLibHelperLOD> lods;
+
+    repairAndPrepareForDecimation(mesh);
+
+    for(int n = 0; n < maxLODNumber; ++n)
+    {
+        vcgLibHelperLOD lod;
+
+        decimateMesh(mesh.fn * reduction, mesh);
+
+        VCG_CMesh0_Helper::retrieveCMeshData(mesh, lod.indices, lod.vertices);
+
+        lods.push_back(lod);
+
+        if(lod.vertices.size() < 13){
+            break;
+        }
+    }
+
+    return lods;
+}
+
+void LODMaker::decimatePreparedMesh(int targetFaceNb, CMeshO &mesh) {
+
 }

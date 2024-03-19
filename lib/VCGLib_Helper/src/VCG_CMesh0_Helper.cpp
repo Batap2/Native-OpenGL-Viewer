@@ -6,7 +6,7 @@
 #include "vcg/complex/algorithms/clustering.h"
 
 
-CMeshO VCG_CMesh0_Helper::constructCMesh(const std::vector<uint32_t> &indices, const std::vector<Point3D> &vertices, const std::vector<Point3D> &faceNormals)
+CMeshO VCG_CMesh0_Helper::constructCMesh(const std::vector<uint32_t> &indices, const std::vector<Point3D> &vertices, const std::vector<Point3D> &faceNormals = {})
 {
     CMeshO m;
 
@@ -81,6 +81,12 @@ CMeshO VCG_CMesh0_Helper::constructCMesh(const std::vector<uint32_t> &indices, c
     return m;
 }
 
+CMeshO VCG_CMesh0_Helper::constructCMesh(const std::vector<uint32_t> &indices, const std::vector<Point3D> &vertices)
+{
+    std::vector<Point3D> a;
+    return constructCMesh(indices, vertices, a);
+}
+
 void VCG_CMesh0_Helper::retrieveCMeshData(CMeshO &mesh, std::vector<uint32_t> &indices, std::vector<Point3D> &vertices, std::vector<Point3D> &faceNormals)
 {
 
@@ -103,4 +109,10 @@ void VCG_CMesh0_Helper::retrieveCMeshData(CMeshO &mesh, std::vector<uint32_t> &i
         Point3D n = {mesh.face[i].N()[0], mesh.face[i].N()[1],mesh.face[i].N()[2]};
         faceNormals[i] = n;
     }
+}
+
+void VCG_CMesh0_Helper::retrieveCMeshData(CMeshO &mesh, std::vector<uint32_t> &indices, std::vector<Point3D> &vertices)
+{
+    std::vector<Point3D> a;
+    retrieveCMeshData(mesh, indices, vertices, a);
 }

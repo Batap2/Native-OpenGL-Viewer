@@ -30,8 +30,10 @@ struct VCG_CMesh0_Helper {
     };
 
     static CMeshO constructCMesh(const std::vector<uint32_t> &indices, const std::vector<Point3D> &vertices, const std::vector<Point3D> &faceNormals);
+    static CMeshO constructCMesh(const std::vector<uint32_t> &indices, const std::vector<Point3D> &vertices);
 
     static void retrieveCMeshData(CMeshO &mesh, std::vector<uint32_t> &indices, std::vector<Point3D> &vertices, std::vector<Point3D> &faceNormals);
+    static void retrieveCMeshData(CMeshO &mesh, std::vector<uint32_t> &indices, std::vector<Point3D> &vertices);
 };
 
 

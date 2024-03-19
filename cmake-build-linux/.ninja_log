@@ -1,0 +1,19 @@
+# ninja log v5
+0	2286	1709906841286893100	lib/VCGLib_Helper/CMakeFiles/VCGLib_Helper.dir/src/VCG_CMesh0_Helper.cpp.o	3af030dc33e234ae
+0	3474	1709906842474865800	lib/VCGLib_Helper/CMakeFiles/VCGLib_Helper.dir/src/cmesh.cpp.o	c3443845748771f1
+5690	5763	1709910900443280200	Viewer	2d7420e7cb18c06e
+1	5681	1709910900363285500	lib/VCGLib_Helper/CMakeFiles/VCGLib_Helper.dir/src/LODMaker.cpp.o	8336bbd9bad061f1
+16220	16598	7316111496188420	lib/VCGLib_Helper/libVCGLib_Helper.a	c4d3ce0b69526deb
+1	9883	1709906848882585600	lib/VCGLib_Helper/CMakeFiles/VCGLib_Helper.dir/src/quadric_simp.cpp.o	721ed16d22fd832f
+6	7004	7316111400193240	lib/VCGLib_Helper/CMakeFiles/VCGLib_Helper.dir/src/cmesh.cpp.obj	de49f8bc190ad614
+4425	14148	7316111471646715	lib/VCGLib_Helper/CMakeFiles/VCGLib_Helper.dir/src/LODMaker.cpp.obj	7a6e1dd7035a08ec
+12	4422	7316111374413264	lib/VCGLib_Helper/CMakeFiles/VCGLib_Helper.dir/src/VCG_CMesh0_Helper.cpp.obj	7ae0b4ff6f1dc423
+16598	16784	7316111497978311	Viewer.exe	15dad307aa730cc6
+9	16220	7316111492399488	lib/VCGLib_Helper/CMakeFiles/VCGLib_Helper.dir/src/quadric_simp.cpp.obj	2bdb475c4157b960
+1	2844	1710770100033938600	lib/VCGLib_Helper/CMakeFiles/VCGLib_Helper.dir/src/VCG_CMesh0_Helper.cpp.o	3af030dc33e234ae
+0	4153	1710770101341914800	lib/VCGLib_Helper/CMakeFiles/VCGLib_Helper.dir/src/cmesh.cpp.o	c3443845748771f1
+0	5745	1710770102933886200	CMakeFiles/Viewer.dir/src/3dview.cpp.o	acf187c28ee4f612
+2844	11098	1710770108289791900	lib/VCGLib_Helper/CMakeFiles/VCGLib_Helper.dir/src/LODMaker.cpp.o	8336bbd9bad061f1
+1	11588	1710770108777783500	lib/VCGLib_Helper/CMakeFiles/VCGLib_Helper.dir/src/quadric_simp.cpp.o	721ed16d22fd832f
+11588	11605	1710770108797783200	lib/VCGLib_Helper/libVCGLib_Helper.a	5021c27c3f0e5351
+11605	11704	1710770108893781500	Viewer	2d7420e7cb18c06e

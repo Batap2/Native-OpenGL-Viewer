@@ -39,8 +39,13 @@ std::vector<uint32_t> _indices2;
 std::vector<Point3D> _vertices2;
 std::vector<Point3D> _normals2;
 
+std::vector<uint32_t> _indices3;
+std::vector<Point3D> _vertices3;
+std::vector<Point3D> _normals3;
+
 bool displayNormals_ = false;
 int displayMode = 0;
+float zoomSpeed = 1;
 
 float lpos[] = {10, 10, 10, 0};
 float lAmbient[] = {0.2, 0.2, 0.2, 0};
@@ -75,6 +80,7 @@ int bnstate[8];
 int anim, help;
 long anim_start;
 long nframes;
+Point3D camPosCartesian;
 
 #ifndef GL_FRAMEBUFFER_SRGB
 #define GL_FRAMEBUFFER_SRGB	0x8db9
@@ -111,10 +117,6 @@ void translateVertices(std::vector<Point3D> & vertices, Point3D vec)
     for (auto &v : vertices){
         v += vec;
     }
-}
-
-void fillTabs(){
-    ObjIO::readObj("../../objTUY/TUY_1071.obj",_indices,_vertices);
 }
 
 void displayNormal(Point3D & pos, Point3D &normal, float scale)
@@ -209,30 +211,33 @@ void drawCoordinateAxis() {
 
 int main(int argc, char **argv)
 {
-    fillTabs();
-
+    ObjIO::readObj("../../objMIBI/obj80.obj",_indices,_vertices);
     computeNormals(_indices, _vertices, _normals);
 
-    auto start = std::chrono::high_resolution_clock::now();
+   auto start = std::chrono::high_resolution_clock::now();
 
     CMeshO m1 = VCG_CMesh0_Helper::constructCMesh(_indices, _vertices, _normals);
 
-    LODMaker::repairAndPrepareForDecimation(m1);
+    std::vector<vcgLibHelperLOD> lods = LODMaker::makeLOD(m1, 3, 0.25);
 
-    //LODMaker::decimateMesh(100, m1);
+    _indices2 = lods[0].indices;
+    _vertices2 = lods[0].vertices;
 
-    VCG_CMesh0_Helper::retrieveCMeshData(m1, _indices2, _vertices2, _normals2);
+    _indices3 = lods[1].indices;
+    _vertices3 = lods[1].vertices;
+
+    computeNormals(_indices2, _vertices2, _normals2);
+    //computeNormals(_indices3, _vertices3, _normals3);
 
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-    std::cout << "init vertices : " << _indices.size() << "\n";
-    std::cout << "decimate mesh vertices : " << _indices2.size() << "\n";
+    std::cout << "init vertices : " << _vertices.size() << "\n";
+    std::cout << "decimate mesh vertices : " << _vertices2.size() << "\n";
     std::cout << "elapsed time : " << duration.count() << "\n";
 
-    translateVertices(_vertices, Point3D(-0.15,0,0));
-    translateVertices(_vertices2, Point3D(0.15,0,0));
 
+    camPosCartesian = Point3D(cam_dist*sin(cam_phi)*cos(cam_theta), cam_dist*sin(cam_phi)*sin(cam_theta), cam_dist*cos(cam_phi));
 	glutInit(&argc, argv);
 	glutInitWindowSize(1600, 900);
 	glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE);
@@ -289,10 +294,24 @@ void display(void)
 	glVertex3f(-5, -1.3, -5);
 	glEnd();
 
-    setMatColor(1,1,1,0);
-    displayMesh(_indices, _vertices, _normals);
-    setMatColor(1,0.8,0.2,0);
-    displayMesh(_indices2, _vertices2, _normals2);
+    setMatColor(1,0.8,0.8,0);
+
+    float distance = Dist(Point3D(0, 0, 0),camPosCartesian);
+
+    distance = floor(distance/4);
+
+    if(distance == 0){
+        displayMesh(_indices, _vertices, _normals);
+        std::cout << "faces count : " << _indices.size()/3 << "\n";
+    } else if(distance == 1){
+        displayMesh(_indices2, _vertices2, _normals2);
+        std::cout << "faces count : " << _indices2.size()/3 << "\n";
+    }else{
+        displayMesh(_indices3, _vertices3, _normals3);
+        std::cout << "faces count : " << _indices3.size()/3 << "\n";
+    }
+    //setMatColor(1,0.8,0.2,0);
+    //displayMesh(_indices2, _vertices2, _normals2);
 
     drawCoordinateAxis();
 
@@ -341,7 +360,7 @@ void print_help(void)
 	glPopAttrib();
 }
 
-#define ZNEAR	0.05f
+#define ZNEAR	0.005f
 void reshape(int x, int y)
 {
 	float vsz, aspect = (float)x / (float)y;
@@ -353,7 +372,7 @@ void reshape(int x, int y)
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	vsz = 0.4663f * ZNEAR;
-	glFrustum(-aspect * vsz, aspect * vsz, -vsz, vsz, 0.05, 5000.0);
+	glFrustum(-aspect * vsz, aspect * vsz, -vsz, vsz, ZNEAR, 5000.0);
 }
 
 void keypress(unsigned char key, int x, int y)
@@ -437,6 +456,13 @@ void mouse(int bn, int st, int x, int y)
 	bnstate[bidx] = st == GLUT_DOWN;
 	mouse_x = x;
 	mouse_y = y;
+
+    if(bnstate[3]){
+        zoomSpeed = zoomSpeed*2;
+    }
+    if(bnstate[4]){
+        zoomSpeed = zoomSpeed/2;
+    }
 }
 
 void motion(int x, int y)
@@ -467,14 +493,16 @@ void motion(int x, int y)
 		right[1] = 0;
 		right[2] = sin(theta);
 
-		cam_pan[0] += (right[0] * dx + up[0] * dy) * 0.01;
-		cam_pan[1] += up[1] * dy * 0.01;
-		cam_pan[2] += (right[2] * dx + up[2] * dy) * 0.01;
+		cam_pan[0] += (right[0] * dx + up[0] * dy) * 0.01 * zoomSpeed;
+		cam_pan[1] += up[1] * dy * 0.01 * zoomSpeed;
+		cam_pan[2] += (right[2] * dx + up[2] * dy) * 0.01 * zoomSpeed;
 		glutPostRedisplay();
 	}
 	if(bnstate[2]) {
-		cam_dist += dy * 0.1;
+		cam_dist += dy * 0.1 * zoomSpeed;
 		if(cam_dist < 0) cam_dist = 0;
 		glutPostRedisplay();
 	}
+
+    camPosCartesian = Point3D(cam_dist*sin(cam_phi)*cos(cam_theta), cam_dist*sin(cam_phi)*sin(cam_theta), cam_dist*cos(cam_phi));
 }
